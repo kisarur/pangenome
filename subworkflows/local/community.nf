@@ -10,6 +10,9 @@ include { PAF2NET             } from '../../modules/local/paf2net/main'
 include { NET2COMMUNITIES     } from '../../modules/local/net2communities/main'
 include { EXTRACT_COMMUNITIES } from '../../modules/local/extract_communities/main'
 
+include { SEPARATE_GENOME_REGIONS } from '../../modules/local/separate_genome_regions/main'
+include { COMBINE_PAF             } from '../../modules/local/combine_paf/main'
+
 workflow COMMUNITY {
     take:
     fasta // file: /path/to/sequences.fasta
@@ -25,12 +28,15 @@ workflow COMMUNITY {
 
     ch_wfmash_map = fasta.map{meta, fasta -> [ meta, fasta, [] ]}
     ch_wfmash_map = ch_wfmash_map.join(gzi).join(fai)
-    WFMASH_MAP_COMMUNITY(ch_wfmash_map,
-                        query_self,
-                        [])
-    ch_versions = ch_versions.mix(WFMASH_MAP_COMMUNITY.out.versions)
 
-    PAF2NET(WFMASH_MAP_COMMUNITY.out.paf)
+    SEPARATE_GENOME_REGIONS(fai)
+    WFMASH_MAP_COMMUNITY(ch_wfmash_map.first(), // converting ch_wfmash_map to val cause we're using wfmash v0.10.4 interface with v0.14.0 (updated interface should have query-list in the first input tuple)
+                        query_self,
+                        SEPARATE_GENOME_REGIONS.out.regions_txt.flatMap())
+    ch_versions = ch_versions.mix(WFMASH_MAP_COMMUNITY.out.versions)
+    COMBINE_PAF(WFMASH_MAP_COMMUNITY.out.paf.groupTuple())
+
+    PAF2NET(COMBINE_PAF.out.paf)
     ch_versions = ch_versions.mix(PAF2NET.out.versions)
 
     NET2COMMUNITIES(PAF2NET.out.txts)
