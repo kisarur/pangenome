@@ -21,6 +21,15 @@
                     "help_text": "A FASTA file containing the sequences to build the pangenome graph from. Each sequence can be a full chromosome, a contig, or a very long read. The FASTA file must be BGZIPPED or WFMASH won't be able to process it. If you have your sequences in FASTA format, you can run: \n\nbgzip <SEQUENCES.fa> @<THREADS> > <SEQUENCES.fa.gz>\nsamtools faidx <SEQUENCES.fa.gz>\n\nIn order to ensure the most compatible functionality, please format your sequence identifiers so that they follow the https://github.com/pangenome/PanSN-spec. \n\npattern: ^\\S+\\.fn?a(sta)?(\\.gz)?$",
                     "fa_icon": "fas fa-file-csv"
                 },
+                "references": {
+                    "type": "string",
+                    "format": "file-path",
+                    "mimetype": "text/plain",
+                    "pattern": "^\\S+\\.fn?a(sta)?(\\.gz)?$",
+                    "description": "Path to BGZIPPED reference FASTA",
+                    "help_text": "A FASTA file containing the reference genome(s) \n\npattern: ^\\S+\\.fn?a(sta)?(\\.gz)?$",
+                    "fa_icon": "fas fa-file-csv"
+                },
                 "n_haplotypes": {
                     "type": "number",
                     "description": "The number of haplotypes in the input FASTA.",

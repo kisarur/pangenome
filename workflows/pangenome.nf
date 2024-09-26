@@ -19,7 +19,8 @@ include { softwareVersionsToYAML           } from '../subworkflows/nf-core/utils
 //
 include { INPUT_CHECK } from '../subworkflows/local/input_check'
 include { PGGB        } from '../subworkflows/local/pggb'
-include { COMMUNITY   } from '../subworkflows/local/community'
+// include { COMMUNITY   } from '../subworkflows/local/community'
+include { REFERENCE_BASED_COMMUNITY   } from '../subworkflows/local/reference_based_community'
 include { ODGI_QC     } from '../subworkflows/local/odgi_qc'
 
 
@@ -59,7 +60,8 @@ workflow PANGENOME {
     // SUBWORKFLOW: Read in FASTA, validate and generate appropriate indices
     //
     INPUT_CHECK (
-        file(params.input, checkIfExists: true)
+        file(params.input, checkIfExists: true),
+        file(params.references, checkIfExists: true)
     )
     ch_versions = ch_versions.mix(INPUT_CHECK.out.versions)
     ch_multiqc_config        = Channel.fromPath("$projectDir/assets/multiqc_config.yml", checkIfExists: true)
@@ -67,13 +69,23 @@ workflow PANGENOME {
     ch_multiqc_logo          = params.multiqc_logo   ? Channel.fromPath(params.multiqc_logo)   : Channel.empty()
 
     if (params.communities) {
-        COMMUNITY (
-            INPUT_CHECK.out.fasta,
-            INPUT_CHECK.out.fai,
-            INPUT_CHECK.out.gzi
+        // TODO: choose between COMMUNITY and REFERENCE_BASED_COMMUNITY based on an additional parameter (e.g. use_reference_based)
+        // COMMUNITY (
+        //     INPUT_CHECK.out.fasta,
+        //     INPUT_CHECK.out.fai,
+        //     INPUT_CHECK.out.gzi
+        // )
+        // ch_versions = ch_versions.mix(COMMUNITY.out.versions)
+        // ch_community_join = COMMUNITY.out.fasta_gz.join(COMMUNITY.out.gzi).join(COMMUNITY.out.fai)
+        REFERENCE_BASED_COMMUNITY (
+            INPUT_CHECK.out.references_fasta,
+            INPUT_CHECK.out.references_fai,
+            INPUT_CHECK.out.genomes_fasta,
+            INPUT_CHECK.out.genomes_fai,
+            INPUT_CHECK.out.genomes_gzi
         )
-        ch_versions = ch_versions.mix(COMMUNITY.out.versions)
-        ch_community_join = COMMUNITY.out.fasta_gz.join(COMMUNITY.out.gzi).join(COMMUNITY.out.fai)
+        ch_versions = ch_versions.mix(REFERENCE_BASED_COMMUNITY.out.versions)
+        ch_community_join = REFERENCE_BASED_COMMUNITY.out.fasta_gz.join(REFERENCE_BASED_COMMUNITY.out.gzi).join(REFERENCE_BASED_COMMUNITY.out.fai)
         PGGB(
             ch_community_join.map{meta, fasta, gzi, fai -> [ meta, fasta ]},
             ch_community_join.map{meta, fasta, gzi, fai -> [ meta, fai ]},
